@@ -2,6 +2,7 @@
 
 # :markup: markdown
 require "active_support/rescuable"
+require "active_support/core_ext/object/deep_dup"
 
 module ActiveJob
   # Active Job \Execution
@@ -71,7 +72,8 @@ module ActiveJob
       def _perform_job
         ActiveSupport::ExecutionContext[:job] = self
         run_callbacks :perform do
-          perform(*arguments)
+          args = ActiveJob.immutable_arguments ? arguments.map(&:deep_dup) : arguments
+          perform(*args)
         end
       end
   end
