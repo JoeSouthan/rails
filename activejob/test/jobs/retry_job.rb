@@ -57,7 +57,7 @@ class RetryJob < ActiveJob::Base
   end
 
   def perform(raising, attempts, *)
-    raising = raising.shift if raising.is_a?(Array)
+    raising = raising[executions - 1] if raising.is_a?(Array)
     if raising && executions < attempts
       JobBuffer.add("Raised #{raising} for the #{executions.ordinalize} time")
       raise raising.constantize
