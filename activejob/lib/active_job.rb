@@ -65,7 +65,7 @@ module ActiveJob
   ##
   # :singleton-method: immutable_arguments
   #
-  # When true, job arguments are deep-duped before +perform+ so mutations inside
+  # When true, job arguments are copied before +perform+ so mutations inside
   # the job do not leak into later retries. Defaults to false; new applications
   # using +config.load_defaults 8.2+ enable this automatically.
   singleton_class.attr_accessor :immutable_arguments

@@ -3522,8 +3522,10 @@ The default value depends on the `config.load_defaults` target version:
 
 #### `config.active_job.immutable_arguments`
 
-Controls whether Active Job deep-dups arguments before calling `perform`. When
+Controls whether Active Job copies arguments before calling `perform`. When
 true, mutations of the `perform` parameters do not leak into later retries.
+Arrays, hashes and strings are copied; other objects, such as Global ID records,
+are passed as-is.
 Mutating `job.arguments` still updates the stored arguments used on retry.
 
 The default value depends on the `config.load_defaults` target version:

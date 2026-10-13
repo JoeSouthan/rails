@@ -21,7 +21,7 @@
 # Rails.application.config.active_job.enqueue_after_transaction_commit = true
 
 ###
-# Deep-dup Active Job arguments before perform so mutations inside the job
+# Copy Active Job arguments before perform so mutations inside the job
 # do not leak into later retries.
 #
 # When enabled, `perform` receives copies of the job arguments. Changing those

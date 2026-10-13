@@ -108,7 +108,31 @@ module ActiveJob
       raise DeserializationError
     end
 
+    # Copies the mutable containers in a set of arguments (Arrays, Hashes and
+    # Strings) so that changes made to them inside +perform+ are not carried
+    # into a retry. Other objects, such as Global ID records, are returned
+    # as-is since they are re-serialized by reference.
+    def copy(arguments) # :nodoc:
+      arguments.map { |argument| copy_argument(argument) }
+    end
+
     private
+      def copy_argument(argument)
+        case argument
+        when String
+          argument.frozen? ? argument : argument.dup
+        when Array
+          argument.map { |arg| copy_argument(arg) }
+        when ActiveSupport::HashWithIndifferentAccess
+          argument.transform_values { |value| copy_argument(value) }
+        when Hash
+          copy = argument.transform_values { |value| copy_argument(value) }
+          Hash.ruby2_keywords_hash?(argument) ? Hash.ruby2_keywords_hash(copy) : copy
+        else
+          argument
+        end
+      end
+
       # :nodoc:
       GLOBALID_KEY = "_aj_globalid"
       # :nodoc:

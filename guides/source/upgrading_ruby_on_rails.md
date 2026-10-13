@@ -150,7 +150,7 @@ go unnoticed until a request matched them. Check the boot log for
 ### Active Job arguments are copied before `perform` in new applications.
 
 New applications (`config.load_defaults 8.2`) set
-`config.active_job.immutable_arguments = true`. Active Job then deep-dups
+`config.active_job.immutable_arguments = true`. Active Job then copies
 arguments before calling `perform`, so mutations of those parameters no longer
 leak into retries.
 

@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 require "helper"
+require "models/person"
+require "jobs/kwargs_job"
+require "active_support/core_ext/hash/indifferent_access"
 
 class ImmutableArgumentsTest < ActiveSupport::TestCase
   class MutatingRetryJob < ActiveJob::Base
@@ -17,6 +20,23 @@ class ImmutableArgumentsTest < ActiveSupport::TestCase
       data[:from_perform] = true
       arguments[0][:from_arguments] = true
       retry_job if executions < 2
+    end
+  end
+
+  class NestedMutationRetryJob < ActiveJob::Base
+    def perform(data, options:)
+      JobBuffer.add([data.deep_dup, options.deep_dup, data.class])
+      data[:list] << 3
+      data[:name] << "!"
+      data[:nested][:count] += 1
+      options[:mode] = "mutated"
+      retry_job if executions < 2
+    end
+  end
+
+  class GlobalIDIdentityJob < ActiveJob::Base
+    def perform(person)
+      JobBuffer.add(person)
     end
   end
 
@@ -68,5 +88,36 @@ class ImmutableArgumentsTest < ActiveSupport::TestCase
       ], JobBuffer.values
       assert JobBuffer.values.none? { |value| value.key?(:from_perform) }
     end
+
+    test "retries preserve nested arguments and keyword arguments when immutable_arguments is enabled" do
+      ActiveJob.immutable_arguments = true
+      data = ActiveSupport::HashWithIndifferentAccess.new(list: [1, 2], name: +"bob", nested: { count: 0 })
+
+      NestedMutationRetryJob.perform_later(data, options: { mode: "original" })
+
+      expected = [
+        ActiveSupport::HashWithIndifferentAccess.new(list: [1, 2], name: "bob", nested: { count: 0 }),
+        { mode: "original" },
+        ActiveSupport::HashWithIndifferentAccess
+      ]
+      assert_equal [expected, expected], JobBuffer.values
+    end
+  end
+
+  test "keyword arguments are passed to perform when immutable_arguments is enabled" do
+    ActiveJob.immutable_arguments = true
+
+    KwargsJob.perform_now(argument: 2)
+
+    assert_equal "Job with argument: 2", JobBuffer.last_value
+  end
+
+  test "Global ID arguments are passed to perform as-is when immutable_arguments is enabled" do
+    ActiveJob.immutable_arguments = true
+    person = Person.new(5)
+
+    GlobalIDIdentityJob.perform_now(person)
+
+    assert_same person, JobBuffer.last_value
   end
 end

@@ -1,7 +1,9 @@
 *   Add `config.active_job.immutable_arguments` to keep job argument mutations
     from leaking into retries.
 
-    When enabled, Active Job deep-dups arguments before calling `perform`.
+    When enabled, Active Job copies the arrays, hashes and strings in the
+    arguments before calling `perform`. Other objects, such as Global ID
+    records, are passed as-is.
     Mutations of the `perform` parameters no longer change the arguments used
     on the next retry. Mutating `job.arguments` still updates the stored
     arguments, so jobs that intentionally persist state there continue to work.
